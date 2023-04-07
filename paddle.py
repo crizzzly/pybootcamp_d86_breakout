@@ -2,8 +2,8 @@ from turtle import Turtle
 
 MOVE_VAL = 25
 
+
 class Paddle(Turtle):
-    
     def __init__(self, position):
         super().__init__()
         self.shape("square")
