@@ -29,6 +29,7 @@ def is_collided_with(item_a, item_b):
 
 class Breakout:
     def __init__(self):
+        self.game_over = False
         self.game_is_on = True
         self.is_paused = False
         self.single_player = True
@@ -50,6 +51,7 @@ class Breakout:
         self.pause = Turtle()
         self.start_splash = Turtle()
         self.gme_ovr = Turtle()
+        self.count = Turtle()
         self.player_start_text = Turtle()
 
         self.paddle = Paddle((0, -330))
@@ -72,7 +74,7 @@ class Breakout:
         self.x1 = LEFT_BORDER + 25
         self.y1 = UPPER_BORDER - self.brick_distance
 
-        self.seconds_to_start = 3
+        self.seconds_to_start = 5
         self.count_secs = self.seconds_to_start
 
         # Show Splash Screen before drawing game
@@ -87,44 +89,48 @@ class Breakout:
         print(f'PAUSED = {self.is_paused}')
 
     def reload_game(self):
-        if not self.game_is_on:
+
+        self.draw_bricks()
+        self.draw_frame()
+        if self.game_over:
             self.gme_ovr.clear()
             for i in range(len(self.players)):
                 self.players[i].reset_scoreboard()
+            self.game_over = False
+        self.paddle.reset_position()
+        self.ball.reset_position(self.paddle.xcor(), -310)
+        self.screen.update()
 
-        self.create_bricks()
-        self.game_is_on = True
-        self.play_game()
+    def run_timer(self):
+        if self.seconds_to_start >= 0:
+            self.seconds_to_start -= 1
 
+
+    def update(self):
+        print(f"update: {self.seconds_to_start}")
+        self.run_timer()
+        self.count.clear()
+        if self.seconds_to_start >= 0:
+            self.count.write(f"{self.seconds_to_start}", align="center", font=("Courier", 50, "normal"))
+            self.screen.ontimer(self.update, 1000)
+            # self.timer_id = self.canvas.after(1000, self.update)
+
+        else:
+            print("stop counting")
+            # self.canvas.after_cancel(self.timer_id)
+            self.player_start_text.clear()
+            self.game_is_on = True
+            self.play_game()
 
     def ready_player(self):
         print(f"starting counter for player{self.active_player+1}")
+
         self.seconds_to_start = self.count_secs
-        count = Turtle()
-        count.clear()
-        count.hideturtle()
-        count.color("white")
-        count.pu()
-        count.goto(0, -150)
-
-        def update():
-            print(f"update: {self.seconds_to_start}")
-
-            if self.seconds_to_start < 0:
-                print("stop counting")
-                self.canvas.after_cancel(self.timer_id)
-                count.clear()
-                self.player_start_text.clear()
-
-                self.draw_frame()
-                self.create_bricks()
-
-                self.play_game()
-
-            count.clear()
-            count.write(f"{self.seconds_to_start}", align="center", font=("Courier", 50, "normal"))
-            self.seconds_to_start -= 1
-            self.timer_id = self.canvas.after(1000, update)
+        self.count.clear()
+        self.count.hideturtle()
+        self.count.color("white")
+        self.count.pu()
+        self.count.goto(0, -150)
 
         p = "ONE" if self.active_player == 0 else "TWO"
         self.player_start_text.hideturtle()
@@ -133,19 +139,22 @@ class Breakout:
         self.player_start_text.goto(0, -50)
         self.player_start_text.write(f"READY PLAYER {p}?", align='center', font=("Courier", 50, "normal"))
 
-        update()
+        self.update()
 
 
     def set_one_player(self):
         print("One Player")
         self.start_splash.clear()
         self.single_player = True
+
+        self.reload_game()
         self.ready_player()
 
     def set_two_player(self):
         print("Two Player")
         self.start_splash.clear()
         self.single_player = False
+        self.reload_game()
         self.ready_player()
 
     def game_over_screen(self):
@@ -168,7 +177,7 @@ class Breakout:
                                 "'b' to play with two players.", align='center', font=("Courier", 15, "normal"))
         self.screen.exitonclick()
 
-    def create_bricks(self):
+    def draw_bricks(self):
         for j in range(len(self.colors)):
             y_val = self.y1 - j * 25
             for i in range(7):
@@ -232,6 +241,9 @@ class Breakout:
             self.players[1].clear()
             self.players[1].game_over = True
 
+        if self.timer_id is not None:
+            self.canvas.after_cancel(self.timer_id)
+
         while self.game_is_on:
             if self.is_paused:
                 self.screen.update()
@@ -258,7 +270,7 @@ class Breakout:
                 # Detect collision with brick
                 for br in self.bricks:
                     if is_collided_with(self.ball, br):
-                        self.brick_hits += 1
+                        self.players[self.active_player].hits += 1
                         self.ball.bounce_y()
                         self.players[self.active_player].point(POINTS[br.color()[0]])
                         br.delete()
@@ -268,36 +280,41 @@ class Breakout:
                         if len(self.bricks) == 0:
                             self.players[self.active_player].level_up()
                             if not self.players[self.active_player].game_over:
-                                self.create_bricks()
+                                self.draw_bricks()
                             else:
                                 self.game_is_on = False
                                 self.game_over_screen()
 
-                        if self.brick_hits == 4 or self.brick_hits == 12:
+                        if self.players[self.active_player].hits == 4 or self.players[self.active_player].hits == 12:
                             self.ball.increase_speed()
+                            print(f"Brick Hit {self.players[self.active_player].hits}")
                         if "yellow" in br.color() and self.hit_yellow == False:
+                            print("Hit Yellow Brick")
                             self.hit_yellow = True
                             self.ball.increase_speed()
 
                 # Detect paddle misses:
                 if self.ball.ycor() < -400:
                     self.players[self.active_player].reduce_life()
-
-                    # set other player to active if he's not game over
-                    if self.players[self.active_player].game_over:
-                        self.active_player = self.other_player()
-                        print(f"switching to player {self.active_player}")
-                        self.game_is_on = False
-                        self.ready_player()
-                        self.game_is_on = False
+                    self.ball.reset_position(self.paddle.xcor(), -320)
 
                     # end game if both are game over
                     if self.players[self.active_player].game_over and self.players[self.other_player()].game_over:
                         self.game_is_on = False
+                        self.game_over = True
                         self.game_over_screen()
 
+                    # set other player to active if he's not game over
+                    elif self.players[self.active_player].game_over:
+                        self.active_player = self.other_player()
+                        print(f"switching to player {self.active_player}")
+                        self.game_is_on = False
+                        self.reload_game()
+                        self.ready_player()
 
-                    self.ball.reset_position(self.paddle.xcor(), -320)
+
+
+
 
 
 if __name__ == "__main__":

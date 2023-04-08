@@ -17,7 +17,9 @@ class Ball(Turtle):
         if not self.stopped:
             new_x = self.xcor() + self.x_move
             new_y = self.ycor() + self.y_move
+            self.hideturtle()
             self.goto(new_x, new_y)
+            self.showturtle()
 
     def toggle_stopp(self):
         self.stopped = True if not self.stopped else False
@@ -31,9 +33,9 @@ class Ball(Turtle):
         self.move_speed *= 0.9
     
     def increase_speed(self):
-        # self.move_speed += 0.5
-        self.x_move += 1
-        self.y_move += 1
+        # self.x_move += 1
+        # self.y_move += 1
+        self.move_speed *= 1.1
 
     def reset_position(self, x, y):
         self.hideturtle()

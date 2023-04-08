@@ -15,6 +15,7 @@ class Scoreboard(Turtle):
         self.lives = 1
         self.level = 1
         self.player = pl
+        self.hits = 0
         self.update_scoreboard()
 
 
@@ -64,6 +65,7 @@ class Scoreboard(Turtle):
                 self.highscore = self.score
 
     def reset_scoreboard(self):
+        self.hits = 0
         self.score = 0
         self.lives = 3
         self.level = 1
