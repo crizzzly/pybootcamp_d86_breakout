@@ -24,7 +24,18 @@ POINTS = {
 
 
 def is_collided_with(item_a, item_b):
-    return abs(item_a.xcor() - item_b.xcor()) < 40 and abs(item_a.ycor() - item_b.ycor()) < 10
+    w, h = 0, 0
+    if item_b.turtlesize()[1] == 5:
+        w = 50
+    elif item_b.turtlesize()[1] == 4:
+        w = 40
+    if item_b.turtlesize()[0] == 1:
+        h = 13
+    elif item_b.turtlesize()[0] < 1:
+        h = 7
+
+    return abs(item_a.xcor() - item_b.xcor()) < w and abs(item_a.ycor() - item_b.ycor()) < h
+
 
 
 class Breakout:
@@ -34,9 +45,9 @@ class Breakout:
         self.is_paused = False
         self.single_player = True
 
-        self.brick_hits = 0
         self.paddle_is_small = False
         self.hit_yellow = False
+        self.hit_red = None
         self.hit_upper_wall = False
 
         self.screen = Screen()
@@ -77,6 +88,11 @@ class Breakout:
         self.seconds_to_start = 5
         self.count_secs = self.seconds_to_start
 
+        self.brick_hits = 0
+        self.frame = 0
+        self.paddle_frame = 0
+        self.brick_frame = 0
+
         # Show Splash Screen before drawing game
         self.splash_screen()
 
@@ -89,7 +105,12 @@ class Breakout:
         print(f'PAUSED = {self.is_paused}')
 
     def reload_game(self):
-
+        self.players[self.active_player].hits = 0
+        self.paddle.reset_position()
+        self.ball.reset_position(self.paddle.xcor(), -310)
+        self.hit_yellow = False
+        self.hit_upper_wall = False
+        self.hit_red = False
         self.draw_bricks()
         self.draw_frame()
         if self.game_over:
@@ -97,14 +118,13 @@ class Breakout:
             for i in range(len(self.players)):
                 self.players[i].reset_scoreboard()
             self.game_over = False
-        self.paddle.reset_position()
-        self.ball.reset_position(self.paddle.xcor(), -310)
+
         self.screen.update()
+        self.ready_player()
 
     def run_timer(self):
         if self.seconds_to_start >= 0:
             self.seconds_to_start -= 1
-
 
     def update(self):
         print(f"update: {self.seconds_to_start}")
@@ -141,7 +161,6 @@ class Breakout:
 
         self.update()
 
-
     def set_one_player(self):
         print("One Player")
         self.start_splash.clear()
@@ -159,6 +178,7 @@ class Breakout:
 
     def game_over_screen(self):
         self.gme_ovr.color("white")
+        self.gme_ovr.hideturtle()
         self.gme_ovr.pu()
         self.gme_ovr.goto(0, 0)
         self.gme_ovr.write("GAME OVER", align="center", font=("Courier", 50, "normal"))
@@ -236,6 +256,7 @@ class Breakout:
     def other_player(self):
         return 1 if self.active_player == 0 else 0
 
+    # TODO: Check Ball Speed
     def play_game(self):
         if self.single_player:
             self.players[1].clear()
@@ -254,47 +275,68 @@ class Breakout:
                 self.pause.write("PAUSE", align="center", font=("Courier", 100, "normal"))
             else:
                 self.screen.update()
+                self.frame += 1
                 self.pause.clear()
                 self.ball.move()
 
                 # Detect collision with wall
                 if self.ball.xcor() > RIGHT_BORDER or self.ball.xcor() < LEFT_BORDER:
+                    print("Side Wall")
                     self.ball.bounce_x()
+
+                # Detect collision with upper wall
                 if self.ball.ycor() > UPPER_BORDER:
+                    print("Upper Wall")
                     self.ball.bounce_y()
+                    # paddle shrinks to one-half its size after the ball
+                    # has broken through the red row and hit the upper wall
+                    if self.hit_upper_wall is False and self.hit_red is True:
+                        self.hit_upper_wall = True
+                        self.paddle.shrink()
 
                 # Detect collision with paddle
                 if is_collided_with(self.ball, self.paddle):
-                    self.ball.bounce_y()
+                    print("paddle")
+                    if self.frame - self.paddle_frame > 1:
+                        self.ball.bounce_y()
+                    self.paddle_frame = self.frame
 
                 # Detect collision with brick
                 for br in self.bricks:
                     if is_collided_with(self.ball, br):
-                        self.players[self.active_player].hits += 1
-                        self.ball.bounce_y()
-                        self.players[self.active_player].point(POINTS[br.color()[0]])
-                        br.delete()
-                        self.bricks.remove(br)
+                        if self.frame - self.brick_frame > 1:
+                            self.brick_frame = self.frame
+                            self.players[self.active_player].hits += 1
+                            print(f"Brick {self.players[self.active_player].hits}")
+                            self.ball.bounce_y()
+                            self.players[self.active_player].point(POINTS[br.color()[0]])
+                            br.delete()
+                            self.bricks.remove(br)
 
-                        # if all bricks are gone
-                        if len(self.bricks) == 0:
-                            self.players[self.active_player].level_up()
-                            if not self.players[self.active_player].game_over:
-                                self.draw_bricks()
-                            else:
-                                self.game_is_on = False
-                                self.game_over_screen()
+                            # if all bricks are gone
+                            if len(self.bricks) == 0:
+                                self.players[self.active_player].level_up()
+                                if not self.players[self.active_player].game_over:
+                                    self.game_is_on = False
+                                    self.reload_game()
+                                else:
+                                    self.game_is_on = False
+                                    self.game_over_screen()
 
-                        if self.players[self.active_player].hits == 4 or self.players[self.active_player].hits == 12:
-                            self.ball.increase_speed()
-                            print(f"Brick Hit {self.players[self.active_player].hits}")
-                        if "yellow" in br.color() and self.hit_yellow == False:
-                            print("Hit Yellow Brick")
-                            self.hit_yellow = True
-                            self.ball.increase_speed()
+                            # increase speed every 4th and 12th brick and if the first yellow brick was hit
+                            if self.players[self.active_player].hits == 4 or self.players[self.active_player].hits == 12:
+                                self.ball.increase_speed()
+                                print(f"Hit {self.players[self.active_player].hits} - increasing speed")
+                            if "yellow" in br.color() and self.hit_yellow == False:
+                                self.ball.increase_speed()
+                                print("Hit Yellow Brick")
+                                self.hit_yellow = True
+                            if "red" in br.color():
+                                self.hit_red = True
 
                 # Detect paddle misses:
                 if self.ball.ycor() < -400:
+                    print("ball out ")
                     self.players[self.active_player].reduce_life()
                     self.ball.reset_position(self.paddle.xcor(), -320)
 
