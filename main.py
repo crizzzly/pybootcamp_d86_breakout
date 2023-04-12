@@ -7,8 +7,8 @@ from scoreboard import Scoreboard
 import time
 
 UPPER_BORDER = 300
-LEFT_BORDER = -300
-RIGHT_BORDER = 300
+LEFT_BORDER = -320
+RIGHT_BORDER = 320
 SCREEN_WIDTH = 660
 SCREEN_HEIGHT = 750
 LEFT_BORDER_BRICKS = -280
@@ -27,7 +27,7 @@ POINTS = {
 def is_collided_with(item_a, item_b):
     w, h = 0, 0
     if item_b.turtlesize()[1] == 5:
-        w = 50
+        w = 60
     elif item_b.turtlesize()[1] == 4:
         w = 40
     if item_b.turtlesize()[0] == 1:
