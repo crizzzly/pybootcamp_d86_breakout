@@ -23,9 +23,10 @@ class Paddle(Turtle):
 
     def go_left(self):
         new_x = self.xcor() - MOVE_VAL
-        self.hideturtle()
-        self.goto(new_x, self.ycor())
-        self.showturtle()
+        if -310 < new_x < 310:
+            self.hideturtle()
+            self.goto(new_x, self.ycor())
+            self.showturtle()
 
     def shrink(self):
         self.shapesize(stretch_wid=1, stretch_len=4)

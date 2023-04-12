@@ -7,10 +7,11 @@ from scoreboard import Scoreboard
 import time
 
 UPPER_BORDER = 300
-LEFT_BORDER = -280
-RIGHT_BORDER = 280
-SCREEN_WIDTH = 620
+LEFT_BORDER = -300
+RIGHT_BORDER = 300
+SCREEN_WIDTH = 660
 SCREEN_HEIGHT = 750
+LEFT_BORDER_BRICKS = -280
 
 POINTS = {
     "cyan": 1,
@@ -82,10 +83,10 @@ class Breakout:
         self.colors = ["red", "orange", "yellow", "green", "blue", "purple", "cyan"]
 
         self.brick_distance = 60
-        self.x1 = LEFT_BORDER + 25
+        self.x1 = LEFT_BORDER_BRICKS + 25
         self.y1 = UPPER_BORDER - self.brick_distance
 
-        self.seconds_to_start = 5
+        self.seconds_to_start = 3
         self.count_secs = self.seconds_to_start
 
         self.brick_hits = 0
@@ -114,6 +115,7 @@ class Breakout:
         self.draw_bricks()
         self.draw_frame()
         if self.game_over:
+            self.ball.reset_speed()
             self.gme_ovr.clear()
             for i in range(len(self.players)):
                 self.players[i].reset_scoreboard()
@@ -306,12 +308,13 @@ class Breakout:
                     if is_collided_with(self.ball, br):
                         if self.frame - self.brick_frame > 1:
                             self.brick_frame = self.frame
+                            br.delete()
+                            self.bricks.remove(br)
                             self.players[self.active_player].hits += 1
                             print(f"Brick {self.players[self.active_player].hits}")
                             self.ball.bounce_y()
                             self.players[self.active_player].point(POINTS[br.color()[0]])
-                            br.delete()
-                            self.bricks.remove(br)
+
 
                             # if all bricks are gone
                             if len(self.bricks) == 0:

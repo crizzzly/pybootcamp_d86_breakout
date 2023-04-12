@@ -12,7 +12,7 @@ class Scoreboard(Turtle):
         self.hideturtle()
         self.score = 0
         self.highscore = 0
-        self.lives = 1
+        self.lives = 3
         self.level = 1
         self.player = pl
         self.hits = 0
@@ -69,6 +69,7 @@ class Scoreboard(Turtle):
         self.score = 0
         self.lives = 3
         self.level = 1
+        self.game_over = False
         self.update_scoreboard()
 
 
